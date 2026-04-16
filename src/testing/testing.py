@@ -47,7 +47,7 @@ def _mark_blocked_by_leaks(results: list) -> list:
 # 4. Build a comparison table (before vs after)
 # ============================================================
 
-async def run_comparison():
+async def run_comparison(audit_logger=None):
     """Run attacks against both unprotected and protected agents.
 
     Returns:
@@ -70,6 +70,33 @@ async def run_comparison():
     )
     protected_results = await run_attacks(protected_agent, protected_runner)
     _mark_blocked_by_leaks(protected_results)
+
+    if audit_logger is not None:
+        for result in unprotected_results:
+            audit_logger.record_interaction(
+                source="comparison_unprotected",
+                user_input=result.get("input", ""),
+                response=result.get("response", ""),
+                blocked=result.get("blocked", False),
+                metadata={
+                    "attack_id": result.get("id"),
+                    "category": result.get("category"),
+                    "leaked_secrets": result.get("leaked_secrets", []),
+                },
+            )
+
+        for result in protected_results:
+            audit_logger.record_interaction(
+                source="comparison_protected",
+                user_input=result.get("input", ""),
+                response=result.get("response", ""),
+                blocked=result.get("blocked", False),
+                metadata={
+                    "attack_id": result.get("id"),
+                    "category": result.get("category"),
+                    "leaked_secrets": result.get("leaked_secrets", []),
+                },
+            )
 
     return unprotected_results, protected_results
 
@@ -131,9 +158,10 @@ class SecurityTestPipeline:
     # Secrets that might leak from the unsafe agent's system prompt
     KNOWN_SECRETS = DEFAULT_KNOWN_SECRETS
 
-    def __init__(self, agent, runner):
+    def __init__(self, agent, runner, audit_logger=None):
         self.agent = agent
         self.runner = runner
+        self.audit_logger = audit_logger
 
     def _check_for_leaks(self, response: str) -> list:
         """Check if the response contains any known secrets.
@@ -170,7 +198,7 @@ class SecurityTestPipeline:
             leaked = []
             blocked = True  # Error = not leaked
 
-        return TestResult(
+        result = TestResult(
             attack_id=attack["id"],
             category=attack["category"],
             input_text=attack["input"],
@@ -178,6 +206,21 @@ class SecurityTestPipeline:
             blocked=blocked,
             leaked_secrets=leaked,
         )
+
+        if self.audit_logger is not None:
+            self.audit_logger.record_interaction(
+                source="security_pipeline",
+                user_input=result.input_text,
+                response=result.response,
+                blocked=result.blocked,
+                metadata={
+                    "attack_id": result.attack_id,
+                    "category": result.category,
+                    "leaked_secrets": result.leaked_secrets,
+                },
+            )
+
+        return result
 
     async def run_all(self, attacks: list = None) -> list:
         """Run all attacks and collect results.
