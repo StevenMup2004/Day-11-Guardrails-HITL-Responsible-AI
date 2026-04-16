@@ -65,32 +65,42 @@ class ConfidenceRouter:
         Returns:
             RoutingDecision with routing action and metadata
         """
-        # TODO 12: Implement routing logic
-        #
-        # 1. Check if action_type is in HIGH_RISK_ACTIONS
-        #    -> If yes: always escalate (action="escalate", priority="high",
-        #       requires_human=True, reason="High-risk action: {action_type}")
-        #
-        # 2. Check confidence thresholds:
-        #    - confidence >= 0.9:
-        #      action="auto_send", priority="low",
-        #      requires_human=False, reason="High confidence"
-        #
-        #    - 0.7 <= confidence < 0.9:
-        #      action="queue_review", priority="normal",
-        #      requires_human=True, reason="Medium confidence — needs review"
-        #
-        #    - confidence < 0.7:
-        #      action="escalate", priority="high",
-        #      requires_human=True, reason="Low confidence — escalating"
+        clamped_confidence = max(0.0, min(1.0, confidence))
+
+        if action_type in HIGH_RISK_ACTIONS:
+            return RoutingDecision(
+                action="escalate",
+                confidence=clamped_confidence,
+                reason=f"High-risk action: {action_type}",
+                priority="high",
+                requires_human=True,
+            )
+
+        if clamped_confidence >= self.HIGH_THRESHOLD:
+            return RoutingDecision(
+                action="auto_send",
+                confidence=clamped_confidence,
+                reason="High confidence",
+                priority="low",
+                requires_human=False,
+            )
+
+        if clamped_confidence >= self.MEDIUM_THRESHOLD:
+            return RoutingDecision(
+                action="queue_review",
+                confidence=clamped_confidence,
+                reason="Medium confidence - needs review",
+                priority="normal",
+                requires_human=True,
+            )
 
         return RoutingDecision(
-            action="auto_send",
-            confidence=confidence,
-            reason="TODO: implement routing logic",
-            priority="low",
-            requires_human=False,
-        )  # TODO: Replace with implementation
+            action="escalate",
+            confidence=clamped_confidence,
+            reason="Low confidence - escalating",
+            priority="high",
+            requires_human=True,
+        )
 
 
 # ============================================================
@@ -109,27 +119,27 @@ class ConfidenceRouter:
 hitl_decision_points = [
     {
         "id": 1,
-        "name": "TODO: Name this decision point",
-        "trigger": "TODO: When does this trigger?",
-        "hitl_model": "TODO: human-in-the-loop / human-on-the-loop / human-as-tiebreaker",
-        "context_needed": "TODO: What does the reviewer need to see?",
-        "example": "TODO: Give a concrete example scenario",
+        "name": "Large Transaction Authorization",
+        "trigger": "Transfer or withdrawal above policy threshold (for example >= 50,000,000 VND) or unusual destination account.",
+        "hitl_model": "human-in-the-loop",
+        "context_needed": "User identity signals, transaction amount, destination account risk score, account history, and model rationale.",
+        "example": "A user who usually transfers below 5,000,000 VND suddenly requests 120,000,000 VND to a new beneficiary at 2 AM.",
     },
     {
         "id": 2,
-        "name": "TODO: Name this decision point",
-        "trigger": "TODO: When does this trigger?",
-        "hitl_model": "TODO: human-in-the-loop / human-on-the-loop / human-as-tiebreaker",
-        "context_needed": "TODO: What does the reviewer need to see?",
-        "example": "TODO: Give a concrete example scenario",
+        "name": "Potential Data Leakage Review",
+        "trigger": "Any response flagged by content filter or judge as possible secret, PII, or policy-violating disclosure.",
+        "hitl_model": "human-on-the-loop",
+        "context_needed": "Original user prompt, raw model output, redacted output, matched guardrail patterns, and safety judge verdict.",
+        "example": "The assistant response includes text resembling an API key and an internal hostname; reviewer decides redact vs block.",
     },
     {
         "id": 3,
-        "name": "TODO: Name this decision point",
-        "trigger": "TODO: When does this trigger?",
-        "hitl_model": "TODO: human-in-the-loop / human-on-the-loop / human-as-tiebreaker",
-        "context_needed": "TODO: What does the reviewer need to see?",
-        "example": "TODO: Give a concrete example scenario",
+        "name": "Conflicting Recommendation Resolution",
+        "trigger": "Confidence router and safety judge disagree, or two policy engines produce contradictory decisions.",
+        "hitl_model": "human-as-tiebreaker",
+        "context_needed": "All model candidates, confidence scores, policy outputs, conversation history, and customer intent summary.",
+        "example": "Router predicts high confidence auto-send, but judge marks response UNSAFE due to ambiguous compliance wording.",
     },
 ]
 
