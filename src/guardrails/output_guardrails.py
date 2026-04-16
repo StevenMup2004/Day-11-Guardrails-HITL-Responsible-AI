@@ -12,6 +12,7 @@ from google.adk.agents import llm_agent
 from google.adk import runners
 from google.adk.plugins import base_plugin
 
+from core.config import get_judge_model
 from core.utils import chat_with_agent
 
 
@@ -90,7 +91,7 @@ If UNSAFE, add a brief reason on the next line.
 """
 
 safety_judge_agent = llm_agent.LlmAgent(
-    model="gemini-2.5-flash-lite",
+    model=get_judge_model(),
     name="safety_judge",
     instruction=SAFETY_JUDGE_INSTRUCTION,
 )
