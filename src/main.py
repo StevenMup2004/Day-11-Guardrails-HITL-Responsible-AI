@@ -83,8 +83,7 @@ async def part3_testing():
     print("PART 3: Security Testing Pipeline")
     print("=" * 60)
 
-    from testing.testing import run_comparison, print_comparison, SecurityTestPipeline
-    from agents.agent import create_unsafe_agent
+    from testing.testing import SecurityTestPipeline
     from guardrails.audit_log import AuditLogPlugin, MonitoringAlert
 
     audit_logger = AuditLogPlugin()
@@ -94,18 +93,8 @@ async def part3_testing():
         error_count_threshold=2,
     )
 
-    # TODO 10: Before vs after comparison
-    print("\n--- TODO 10: Before/After Comparison ---")
-    unprotected, protected = await run_comparison(audit_logger=audit_logger)
-    if unprotected and protected:
-        print_comparison(unprotected, protected)
-    else:
-        print("Complete TODO 10 to see the comparison.")
-
-    # TODO 11: Automated security pipeline
-    print("\n--- TODO 11: Security Test Pipeline ---")
-    agent, runner = create_unsafe_agent()
-    pipeline = SecurityTestPipeline(agent, runner, audit_logger=audit_logger)
+    print("\n--- TODO 10 + TODO 11: Assignment Security Pipeline ---")
+    pipeline = SecurityTestPipeline(audit_logger=audit_logger)
     results = await pipeline.run_all()
     if results:
         pipeline.print_report(results)

@@ -52,7 +52,7 @@ Day-11-Guardrails-HITL-Responsible-AI/
 
 ```bash
 pip install -r requirements.txt
-export GOOGLE_API_KEY="your-api-key-here"
+export OPENAI_API_KEY="your-openai-api-key"
 jupyter notebook notebooks/lab11_guardrails_hitl.ipynb
 ```
 
@@ -61,7 +61,11 @@ jupyter notebook notebooks/lab11_guardrails_hitl.ipynb
 ```bash
 cd src/
 pip install -r ../requirements.txt
-export GOOGLE_API_KEY="your-api-key-here"
+#export OPENAI_API_KEY=""
+
+# Optional: choose a different model/provider
+# export ADK_MODEL="openai/gpt-4.1-mini"
+# export ADK_MODEL="gemini-2.5-flash-lite"
 
 # Run the full lab
 python main.py
@@ -83,7 +87,7 @@ python hitl/hitl.py
 
 - **Google ADK** — Agent Development Kit (plugins, runners)
 - **NeMo Guardrails** — NVIDIA framework with Colang (declarative safety rules)
-- **Gemini 2.5 Flash/Flash Lite** — LLM backend (you can switch to other models if you want)
+- **OpenAI (via LiteLLM)** — default LLM backend (`openai/gpt-4.1-mini`)
 
 ## Lab Structure (2.5 hours)
 
@@ -106,12 +110,12 @@ python hitl/hitl.py
 | # | Description | Framework |
 |---|-------------|-----------|
 | 1 | Write 5 adversarial prompts | - |
-| 2 | Generate attack test cases with AI | Gemini |
+| 2 | Generate attack test cases with AI | Configured LLM |
 | 3 | Injection detection (regex) | Python |
 | 4 | Topic filter | Python |
 | 5 | Input Guardrail Plugin | Google ADK |
 | 6 | Content filter (PII, secrets) | Python |
-| 7 | LLM-as-Judge safety check | Gemini |
+| 7 | LLM-as-Judge safety check | Configured LLM |
 | 8 | Output Guardrail Plugin | Google ADK |
 | 9 | NeMo Guardrails Colang config | NeMo |
 | 10 | Rerun 5 attacks with guardrails | Google ADK |
